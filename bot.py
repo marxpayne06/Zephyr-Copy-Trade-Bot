@@ -20,7 +20,6 @@ from telegram.constants import ParseMode
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Keeping your credentials as requested
 BOT_TOKEN         = "8544776626:AAFtqbjhQbC3vtw-ECW4np75J8iDeAJ28Ls"
 WELCOME_PHOTO_URL = "https://i.ibb.co/YBfYSqTw"
 SOLANA_RPC_URL    = "https://solana-mainnet.g.alchemy.com/v2/HKpG0b8eDkPcgqUadfkYw"
@@ -31,7 +30,7 @@ logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=lo
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HEALTH SERVER (Modified for Render/UptimeRobot Compatibility)
+# HEALTH SERVER (Optimized for Render & UptimeRobot)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class HealthHandler(BaseHTTPRequestHandler):
@@ -44,10 +43,10 @@ class HealthHandler(BaseHTTPRequestHandler):
         pass
 
 def run_health_server():
-    # Render provides a dynamic PORT. This logic ensures we catch it.
+    # Render binds to a dynamic port; we must use the PORT env var
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), HealthHandler)
-    logger.info(f"✅ Health server started on port {port}")
+    logger.info(f"✅ Health server online on port {port}")
     server.serve_forever()
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -327,7 +326,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if d == "back_home":
         await send_home(query, query.from_user, context)
 
-    # ── WALLET ───────────────────────────────────────────────────────────────
     elif d == "wallet_menu":
         w = get_wallet(uid); st = "✅ Connected" if w else "❌ No wallet yet"
         await edit(query, f"👛 *Wallet Management*\n\nStatus: {st}\n\nCreate or import a wallet below.",
@@ -447,8 +445,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await edit(query, "\n".join(lines),
             InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Refresh", callback_data="portfolio_view"),
                                    InlineKeyboardButton("⬅️ Back",    callback_data="back_home")]]))
-    elif d == "pnl_generate":
-        await edit(query, "📈 *Generate PnL*\n\nPnL card generation coming soon — will create a shareable image of your trading performance.")
 
     # ── TRENDING ─────────────────────────────────────────────────────────────
     elif d == "trending_menu":
@@ -571,7 +567,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip(); uid = update.effective_user.id; state = context.user_data.get("awaiting")
-
     def bkb(cb): return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data=cb)]])
     pm = ParseMode.MARKDOWN
 
@@ -645,7 +640,6 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError: await update.message.reply_text("❌ Enter a number like `0.005`", parse_mode=pm)
         return
 
-    # Default CA lookup
     if CA_RE.match(text):
         msg = await update.message.reply_text("🔍 Looking up token...")
         info = await get_token_price_dex(text)
@@ -669,7 +663,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [InlineKeyboardButton("⬅️ Home",        callback_data="back_home")]]))
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BACKGROUND JOB
+# BACKGROUND JOB & ERROR HANDLING
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def check_monitors(context: ContextTypes.DEFAULT_TYPE):
@@ -687,23 +681,32 @@ async def check_monitors(context: ContextTypes.DEFAULT_TYPE):
                                                         InlineKeyboardButton("💸 Sell", callback_data="sell_start")]]))
             except: pass
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    logger.error(f"⚠️ Exception while handling an update: {context.error}")
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ENTRY POINT
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
     init_db()
-    # Start health server in background thread
     Thread(target=run_health_server, daemon=True).start()
     
     app = Application.builder().token(BOT_TOKEN).build()
+    
+    # Handlers
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
+    app.add_error_handler(error_handler)
+    
+    # Jobs
     app.job_queue.run_repeating(check_monitors, interval=60, first=10)
 
-    logger.info(f"🌬️ {BOT_NAME} is running...")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    logger.info(f"🌬️ {BOT_NAME} is launching...")
+    
+    # Render Fix: Use drop_pending_updates to avoid clutter on restart
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
