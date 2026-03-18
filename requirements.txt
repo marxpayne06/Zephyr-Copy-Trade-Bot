@@ -1,5 +1,4 @@
 python-telegram-bot==20.8
 httpx
 base58
-solders
-solana
+solders==0.21.0
