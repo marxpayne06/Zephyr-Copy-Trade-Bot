@@ -1,14 +1,15 @@
 services:
   - type: web
-    name: zephyr-trading-bot
+    name: zephyr-copy-trade-bot
     runtime: python
-    buildCommand: "pip install -r requirements.txt"
+    # This command ensures pip is up to date before installing dependencies
+    buildCommand: "pip install --upgrade pip && pip install -r requirements.txt"
     startCommand: "python bot.py"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.10.12
       - key: BOT_TOKEN
-        sync: false  # Set in Render dashboard
+        sync: false  # You must set this manually in the Render Dashboard
       - key: SOLANA_RPC_URL
         value: https://api.mainnet-beta.solana.com
     healthCheckPath: /
