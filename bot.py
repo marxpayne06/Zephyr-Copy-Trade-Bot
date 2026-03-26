@@ -836,16 +836,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''
-
-# Write the corrected file
-with open('/mnt/kimi/output/bot_fixed.py', 'w', encoding='utf-8') as f:
-    f.write(corrected_code)
-
-print("✅ Fixed bot.py created successfully!")
-print("\nKey changes made:")
-print("1. Removed the _polling_cleanup_cb compatibility issue")
-print("2. Changed app to application for clarity")
-print("3. Added .concurrent_updates(True) to builder")
-print("4. Added close_loop=False to run_polling")
-print("5. Escaped all backslashes properly for file writing")
