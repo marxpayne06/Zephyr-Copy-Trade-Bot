@@ -1,4 +1,3 @@
-import logging
 import os
 import sqlite3
 import asyncio
@@ -13,7 +12,7 @@ from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
-    MessageHandler, filters, ContextTypes, ConversationHandler
+    MessageHandler, filters, ContextTypes
 )
 from telegram.constants import ParseMode
 
@@ -39,14 +38,13 @@ logger = logging.getLogger(__name__)
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
+        self.send_header(\'Content-type\', \'text/plain\')
         self.end_headers()
         self.wfile.write(b"Zephyr Bot is alive and running!")
     
     def log_message(self, format, *args):
         # Suppress health check logs to reduce noise
-        if self.path != '/health':
-            logger.info(f"Health check: {args[0]}")
+        logger.info(f"Health check: {self.path}")
 
 def run_health_server():
     port = int(os.environ.get("PORT", 10000))
@@ -90,7 +88,7 @@ def init_db():
         joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         referrer_id INTEGER, 
         slippage REAL DEFAULT 1.0, 
-        gas_fee TEXT DEFAULT 'medium',
+        gas_fee TEXT DEFAULT \'medium\',
         auto_buy BOOLEAN DEFAULT 0,
         buy_amount REAL DEFAULT 0.1
     )""")
@@ -293,9 +291,9 @@ def sell_kb(ca):
     ])
 
 def settings_kb(user_data):
-    slippage = user_data.get('slippage', 1.0)
-    gas = user_data.get('gas_fee', 'medium')
-    auto_buy = "✅" if user_data.get('auto_buy', 0) else "❌"
+    slippage = user_data.get(\'slippage\', 1.0)
+    gas = user_data.get(\'gas_fee\', \'medium\')
+    auto_buy = "✅" if user_data.get(\'auto_buy\', 0) else "❌"
     
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(f"Slippage: {slippage}%", callback_data="set_slippage")],
@@ -320,19 +318,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     upsert_user(user.id, user.username, user.first_name, referrer_id)
     
     welcome_text = (
-        f"👋 *Welcome to {BOT_NAME}*\n\n"
-        f"Your high-speed Solana trading companion.\n\n"
-        f"🚀 *Features:*\n"
-        f"• Instant token swaps\n"
-        f"• Real-time price monitoring\n"
-        f"• Wallet management\n"
-        f"• Trending tokens\n\n"
+        f"👋 *Welcome to {BOT_NAME}*\\n\\n"
+        f"Your high-speed Solana trading companion.\\n\\n"
+        f"🚀 *Features:*\\n"
+        f"• Instant token swaps\\n"
+        f"• Real-time price monitoring\\n"
+        f"• Wallet management\\n"
+        f"• Trending tokens\\n\\n"
         f"Paste any token Contract Address (CA) to start trading!"
     )
     
     # Send photo if URL is valid, otherwise send text
     try:
-        if WELCOME_PHOTO_URL and WELCOME_PHOTO_URL.startswith('http'):
+        if WELCOME_PHOTO_URL and WELCOME_PHOTO_URL.startswith(\'http\'):
             await update.message.reply_photo(
                 photo=WELCOME_PHOTO_URL,
                 caption=welcome_text,
@@ -365,7 +363,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Main Navigation
         if data == "home":
             await query.edit_message_text(
-                "🏠 *Main Menu*\n\nSelect an option below:",
+                "🏠 *Main Menu*\\n\\nSelect an option below:",
                 reply_markup=main_kb(),
                 parse_mode=ParseMode.MARKDOWN
             )
@@ -373,12 +371,12 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Wallet Management
         elif data == "w_m":
             w = get_wallet(uid)
-            bal = await get_sol_balance(w['public_key']) if w else 0.0
+            bal = await get_sol_balance(w[\'public_key\']) if w else 0.0
             
             txt = (
-                f"👛 *Wallet Management*\n\n"
-                f"Address: `{w['public_key'] if w else 'Not created'}`\n"
-                f"Balance: `{bal:.4f} SOL`\n\n"
+                f"👛 *Wallet Management*\\n\\n"
+                f"Address: `{w[\'public_key\'] if w else \'Not created\'}`\\n"
+                f"Balance: `{bal:.4f} SOL`\\n\\n"
                 f"Select an option:"
             )
             await query.edit_message_text(
@@ -397,11 +395,11 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 save_wallet(uid, pub, priv)
                 
                 txt = (
-                    f"✅ *Wallet Created Successfully!*\n\n"
-                    f"Address: `{pub}`\n\n"
-                    f"🔐 *Private Key:*\n`{priv}`\n\n"
+                    f"✅ *Wallet Created Successfully!*\\n\\n"
+                    f"Address: `{pub}`\\n\\n"
+                    f"🔐 *Private Key:*\\n`{priv}`\\n\\n"
                     f"⚠️ *IMPORTANT:* Save this private key immediately! "
-                    f"You won't see it again. Never share it with anyone!"
+                    f"You won\'t see it again. Never share it with anyone!"
                 )
                 await query.edit_message_text(
                     txt,
@@ -417,21 +415,21 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         elif data == "w_i":
             await query.edit_message_text(
-                "📥 *Import Wallet*\n\n"
-                "Please send your private key in the next message.\n"
+                "📥 *Import Wallet*\\n\\n"
+                "Please send your private key in the next message.\\n"
                 "⚠️ This will overwrite any existing wallet!",
                 reply_markup=back_kb(),
                 parse_mode=ParseMode.MARKDOWN
             )
-            context.user_data['awaiting_import'] = True
+            context.user_data[\'awaiting_import\'] = True
         
         elif data == "w_b":
             w = get_wallet(uid)
             if w:
-                bal = await get_sol_balance(w['public_key'])
+                bal = await get_sol_balance(w[\'public_key\'])
                 await query.edit_message_text(
-                    f"💰 *Balance Check*\n\n"
-                    f"Address: `{w['public_key']}`\n"
+                    f"💰 *Balance Check*\\n\\n"
+                    f"Address: `{w[\'public_key\']}`\\n"
                     f"SOL Balance: `{bal:.4f} SOL`",
                     reply_markup=back_kb(),
                     parse_mode=ParseMode.MARKDOWN
@@ -444,16 +442,16 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         elif data == "w_w":
             await query.edit_message_text(
-                "📤 *Withdraw SOL*\n\n"
-                "Feature coming soon!\n"
-                "You'll be able to send SOL to any address.",
+                "📤 *Withdraw SOL*\\n\\n"
+                "Feature coming soon!\\n"
+                "You\'ll be able to send SOL to any address.",
                 reply_markup=back_kb()
             )
         
         elif data == "w_d":
             await query.edit_message_text(
-                "🗑️ *Delete Wallet*\n\n"
-                "Are you sure? This cannot be undone!\n\n"
+                "🗑️ *Delete Wallet*\\n\\n"
+                "Are you sure? This cannot be undone!\\n\\n"
                 "⚠️ Make sure you have backed up your private key!",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("✅ Yes, Delete", callback_data="w_d_confirm")],
@@ -474,8 +472,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Portfolio
         elif data == "p_v":
             await query.edit_message_text(
-                "📊 *Portfolio*\n\n"
-                "Your holdings will appear here.\n"
+                "📊 *Portfolio*\\n\\n"
+                "Your holdings will appear here.\\n"
                 "Connect your wallet to see your assets.",
                 reply_markup=back_kb(),
                 parse_mode=ParseMode.MARKDOWN
@@ -484,8 +482,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Buy/Sell Placeholders
         elif data == "b_s":
             await query.edit_message_text(
-                "🛒 *Buy Tokens*\n\n"
-                "Paste a token Contract Address (CA) to buy.\n\n"
+                "🛒 *Buy Tokens*\\n\\n"
+                "Paste a token Contract Address (CA) to buy.\\n\\n"
                 "Example: `DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263`",
                 reply_markup=back_kb(),
                 parse_mode=ParseMode.MARKDOWN
@@ -493,8 +491,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         elif data == "s_s":
             await query.edit_message_text(
-                "💸 *Sell Tokens*\n\n"
-                "Paste a token Contract Address (CA) to sell.\n"
+                "💸 *Sell Tokens*\\n\\n"
+                "Paste a token Contract Address (CA) to sell.\\n"
                 "Or select from your portfolio.",
                 reply_markup=back_kb(),
                 parse_mode=ParseMode.MARKDOWN
@@ -512,12 +510,12 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     r = await client.get("https://api.dexscreener.com/token-boosts/top/v1")
                     boosts = r.json()
                     
-                    txt = "🔥 *Trending on DEXScreener*\n\n"
+                    txt = "🔥 *Trending on DEXScreener*\\n\\n"
                     for i, token in enumerate(boosts[:5], 1):
-                        name = token.get('token', {}).get('name', 'Unknown')
-                        sym = token.get('token', {}).get('symbol', '???')
-                        ca = token.get('token', {}).get('address', '')
-                        txt += f"{i}. *{name}* (${sym})\n`{ca}`\n\n"
+                        name = token.get(\'token\', {}).get(\'name\', \'Unknown\')
+                        sym = token.get(\'token\', {}).get(\'symbol\', \'???\')
+                        ca = token.get(\'token\', {}).get(\'address\', \'\')
+                        txt += f"{i}. *{name}* (${sym})\\n`{ca}`\\n\\n"
                     
                     await query.edit_message_text(
                         txt,
@@ -527,8 +525,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 logger.error(f"Error fetching trending: {e}")
                 await query.edit_message_text(
-                    "📉 *Trending Tokens*\n\n"
-                    "1. $PEPE (SOL)\n2. $WIF (SOL)\n3. $BONK (SOL)\n4. $JUP (SOL)\n5. $RAY (SOL)\n\n"
+                    "📉 *Trending Tokens*\\n\\n"
+                    "1. $PEPE (SOL)\\n2. $WIF (SOL)\\n3. $BONK (SOL)\\n4. $JUP (SOL)\\n5. $RAY (SOL)\\n\\n"
                     "_Data temporarily unavailable_",
                     reply_markup=back_kb(),
                     parse_mode=ParseMode.MARKDOWN
@@ -538,15 +536,15 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif data == "set":
             user_data = get_user(uid) or {}
             await query.edit_message_text(
-                "⚙️ *Settings*\n\nConfigure your trading preferences:",
+                "⚙️ *Settings*\\n\\nConfigure your trading preferences:",
                 reply_markup=settings_kb(user_data),
                 parse_mode=ParseMode.MARKDOWN
             )
         
         elif data == "set_slippage":
             await query.edit_message_text(
-                "📊 *Set Slippage*\n\n"
-                "Current options: 0.5%, 1%, 2%, 3%\n\n"
+                "📊 *Set Slippage*\\n\\n"
+                "Current options: 0.5%, 1%, 2%, 3%\\n\\n"
                 "Tap to change:",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("0.5%", callback_data="slip_0.5")],
@@ -563,7 +561,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer(f"Slippage set to {slip}%")
             user_data = get_user(uid) or {}
             await query.edit_message_text(
-                "⚙️ *Settings Updated*\n\n"
+                "⚙️ *Settings Updated*\\n\\n"
                 f"Slippage: {slip}%",
                 reply_markup=settings_kb(user_data),
                 parse_mode=ParseMode.MARKDOWN
@@ -571,7 +569,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         elif data == "set_gas":
             await query.edit_message_text(
-                "⛽ *Set Gas Priority*\n\n"
+                "⛽ *Set Gas Priority*\\n\\n"
                 "Higher = faster transactions",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("Low", callback_data="gas_low")],
@@ -596,9 +594,9 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif data == "ref":
             ref_link = f"https://t.me/{context.bot.username}?start={uid}"
             await query.edit_message_text(
-                f"🤝 *Referral Program*\n\n"
-                f"Your referral link:\n`{ref_link}`\n\n"
-                f"Share and earn rewards when friends trade!\n\n"
+                f"🤝 *Referral Program*\\n\\n"
+                f"Your referral link:\\n`{ref_link}`\\n\\n"
+                f"Share and earn rewards when friends trade!\\n\\n"
                 f"Stats coming soon...",
                 reply_markup=back_kb(),
                 parse_mode=ParseMode.MARKDOWN
@@ -607,8 +605,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Alerts
         elif data == "alerts":
             await query.edit_message_text(
-                "🔔 *Price Alerts*\n\n"
-                "Set alerts for price movements.\n"
+                "🔔 *Price Alerts*\\n\\n"
+                "Set alerts for price movements.\\n"
                 "Feature coming soon!",
                 reply_markup=back_kb(),
                 parse_mode=ParseMode.MARKDOWN
@@ -622,17 +620,17 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             if amount == "custom":
                 await query.edit_message_text(
-                    "💰 *Custom Buy Amount*\n\n"
+                    "💰 *Custom Buy Amount*\\n\\n"
                     "Please enter the amount of SOL you want to spend:",
                     reply_markup=back_kb(),
                     parse_mode=ParseMode.MARKDOWN
                 )
-                context.user_data['awaiting_buy_amount'] = ca
+                context.user_data[\'awaiting_buy_amount\'] = ca
             else:
                 await query.edit_message_text(
-                    f"🛒 *Confirm Purchase*\n\n"
-                    f"Amount: {amount} SOL\n"
-                    f"Token: `{ca}`\n\n"
+                    f"🛒 *Confirm Purchase*\\n\\n"
+                    f"Amount: {amount} SOL\\n"
+                    f"Token: `{ca}`\\n\\n"
                     f"⚠️ This is a demo. Real trading coming soon!",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_buy_{amount}_{ca}")],
@@ -648,17 +646,17 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             # Simulate buy
             await query.edit_message_text(
-                f"⏳ *Processing Buy Order...*\n\n"
-                f"Amount: {amount} SOL\n"
-                f"Token: `{ca}`\n\n"
+                f"⏳ *Processing Buy Order...*\\n\\n"
+                f"Amount: {amount} SOL\\n"
+                f"Token: `{ca}`\\n\\n"
                 f"Please wait...",
                 parse_mode=ParseMode.MARKDOWN
             )
             await asyncio.sleep(2)
             await query.edit_message_text(
-                f"✅ *Buy Order Simulated*\n\n"
-                f"Amount: {amount} SOL\n"
-                f"Token: `{ca}`\n\n"
+                f"✅ *Buy Order Simulated*\\n\\n"
+                f"Amount: {amount} SOL\\n"
+                f"Token: `{ca}`\\n\\n"
                 f"In production, this would execute on Solana!",
                 reply_markup=main_kb(),
                 parse_mode=ParseMode.MARKDOWN
@@ -671,9 +669,9 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ca = parts[2] if len(parts) > 2 else "unknown"
             
             await query.edit_message_text(
-                f"💸 *Confirm Sell*\n\n"
-                f"Percentage: {percentage}%\n"
-                f"Token: `{ca}`\n\n"
+                f"💸 *Confirm Sell*\\n\\n"
+                f"Percentage: {percentage}%\\n"
+                f"Token: `{ca}`\\n\\n"
                 f"⚠️ This is a demo. Real trading coming soon!",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_sell_{percentage}_{ca}")],
@@ -698,7 +696,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     
     # Check for awaiting states
-    if context.user_data.get('awaiting_import'):
+    if context.user_data.get(\'awaiting_import\'):
         # Handle wallet import
         try:
             # Validate private key (basic check)
@@ -708,23 +706,23 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             # Import logic here (simplified for demo)
             await update.message.reply_text(
-                "✅ Wallet import feature coming soon!\n"
+                "✅ Wallet import feature coming soon!\\n"
                 "Please use Create Wallet for now.",
                 reply_markup=main_kb()
             )
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {str(e)}")
         finally:
-            context.user_data['awaiting_import'] = False
+            context.user_data[\'awaiting_import\'] = False
         return
     
-    if context.user_data.get('awaiting_buy_amount'):
-        ca = context.user_data['awaiting_buy_amount']
+    if context.user_data.get(\'awaiting_buy_amount\'):
+        ca = context.user_data[\'awaiting_buy_amount\']
         try:
             amount = float(text)
             await update.message.reply_text(
-                f"🛒 *Buy {amount} SOL*\n"
-                f"Token: `{ca}`\n\n"
+                f"🛒 *Buy {amount} SOL*\\n"
+                f"Token: `{ca}`\\n\\n"
                 f"Confirm?",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_buy_{amount}_{ca}")],
@@ -735,7 +733,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             await update.message.reply_text("❌ Please enter a valid number.")
         finally:
-            context.user_data['awaiting_buy_amount'] = False
+            context.user_data[\'awaiting_buy_amount\'] = False
         return
     
     # CA detection (Solana addresses are 32-44 chars, base58)
@@ -755,11 +753,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             price_change = data.get("priceChange", {}).get("h24", 0)
             
             txt = (
-                f"🪙 *{name}* (${sym})\n\n"
-                f"💰 Price: `${price}`\n"
-                f"📊 24h Change: `{price_change:+.2f}%`\n"
-                f"💧 Liquidity: `${liq:,.0f}`\n"
-                f"📈 24h Volume: `${vol24h:,.0f}`\n\n"
+                f"🪙 *{name}* (${sym})\\n\\n"
+                f"💰 Price: `${price}`\\n"
+                f"📊 24h Change: `{price_change:+.2f}%`\\n"
+                f"💧 Liquidity: `${liq:,.0f}`\\n"
+                f"📈 24h Volume: `${vol24h:,.0f}`\\n\\n"
                 f"CA: `{text}`"
             )
             
@@ -770,7 +768,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         InlineKeyboardButton("🛒 Buy", callback_data=f"buy_select_{text}"),
                         InlineKeyboardButton("💸 Sell", callback_data=f"sell_select_{text}")
                     ],
-                    [InlineKeyboardButton("📊 Chart", url=data.get('url', f'https://dexscreener.com/solana/{text}'))],
+                    [InlineKeyboardButton("📊 Chart", url=data.get(\'url\', f\'https://dexscreener.com/solana/{text}\'))],
                     [InlineKeyboardButton("🔔 Set Alert", callback_data=f"alert_{text}")],
                     [InlineKeyboardButton("⬅️ Menu", callback_data="home")]
                 ]),
@@ -778,13 +776,13 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         else:
             await msg.edit_text(
-                "❌ Token not found or no liquidity on DEXScreener.\n"
+                "❌ Token not found or no liquidity on DEXScreener.\\n"
                 "Please check the contract address.",
                 reply_markup=back_kb()
             )
     else:
         await update.message.reply_text(
-            "❓ I don't understand that command.\n"
+            "❓ I don\'t understand that command.\\n"
             "Use /start to see the menu or paste a token CA.",
             reply_markup=main_kb()
         )
@@ -798,7 +796,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN EXECUTION
+# MAIN EXECUTION - FIXED FOR RENDER COMPATIBILITY
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
@@ -813,22 +811,41 @@ def main():
     Thread(target=maintenance_loop, daemon=True).start()
     logger.info("🧹 Maintenance loop started")
     
-    # Build application
-    app = Application.builder().token(BOT_TOKEN).build()
+    # Build application with specific settings for Render
+    application = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .concurrent_updates(True)
+        .build()
+    )
     
     # Add handlers
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(callback_handler))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-    app.add_error_handler(error_handler)
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(callback_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
+    application.add_error_handler(error_handler)
     
     logger.info("🌬️ Zephyr Bot is live and running!")
     
-    # Run polling
-    app.run_polling(
+    # Run polling with specific parameters for stability
+    application.run_polling(
         drop_pending_updates=True,
-        allowed_updates=Update.ALL_TYPES
+        allowed_updates=Update.ALL_TYPES,
+        close_loop=False
     )
 
 if __name__ == "__main__":
     main()
+'''
+
+# Write the corrected file
+with open('/mnt/kimi/output/bot_fixed.py', 'w', encoding='utf-8') as f:
+    f.write(corrected_code)
+
+print("✅ Fixed bot.py created successfully!")
+print("\nKey changes made:")
+print("1. Removed the _polling_cleanup_cb compatibility issue")
+print("2. Changed app to application for clarity")
+print("3. Added .concurrent_updates(True) to builder")
+print("4. Added close_loop=False to run_polling")
+print("5. Escaped all backslashes properly for file writing")
