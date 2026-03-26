@@ -1,5 +1,7 @@
+
 python-telegram-bot==20.7
 httpx==0.25.2
 solders==0.21.0
 base58==2.1.1
+gunicorn==21.2.0
 
